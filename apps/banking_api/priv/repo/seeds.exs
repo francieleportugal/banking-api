@@ -9,3 +9,16 @@
 #
 # We recommend using the bang functions (`insert!`, `update!`
 # and so on) as they will fail if something goes wrong.
+
+require BankingApi.Operations
+
+alias BankingApi.Operations
+alias BankingApi.Accounts.Schemas.Operation
+alias BankingApi.Repo
+
+operations = [
+  %Operation{id: Operations.cash_withdrawal, description: "Cash withdrawal"},
+  %Operation{id: Operations.transfer, description: "Transfer"}
+]
+
+Enum.each(operations, &Repo.insert!(&1))

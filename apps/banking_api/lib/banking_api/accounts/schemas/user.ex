@@ -11,15 +11,17 @@ defmodule BankingApi.Accounts.Schemas.User do
   schema "users" do
     field :name, :string
     field :email, :string
+
     timestamps()
 
     # has_one :account, Account
   end
 
-  @doc false
-  def changeset(model = %__MODULE__{}, attrs) do
+  def changeset(model \\ %__MODULE__{}, attrs) do
     model
-    |> cast(attrs, @required)
-    |> validate_required(@required)
+    |>cast(attrs, @required)
+    |>validate_required(@required)
+    |>validate_length(:name, min: 3)
+    |>validate_format(:email, ~r/^[A-Za-z0-9._%+\-+']+@[A-Za-z0-9\.\-]+\.[A-Za-z]{2,4}$/)
   end
 end

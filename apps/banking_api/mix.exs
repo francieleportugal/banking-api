@@ -49,9 +49,15 @@ defmodule BankingApi.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "ecto.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
+      "ecto.setup": ["ecto.create", "ecto.migrate", "run apps/banking_api/priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.drop", "ecto.create --quiet", "ecto.migrate --quiet", "test"]
+      test: [
+        "ecto.drop --quiet",
+        "ecto.create --quiet",
+        "ecto.migrate --quiet",
+        "run apps/banking_api/priv/repo/seeds.exs --quiet",
+        "test"
+      ]
     ]
   end
 end

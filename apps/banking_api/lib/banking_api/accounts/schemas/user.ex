@@ -2,19 +2,21 @@ defmodule BankingApi.Accounts.Schemas.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias BankingApi.Accounts.Schemas.Account
+
   @required [:name, :email]
 
-  # @derive {Jason.Encoder, except: [:__meta__]}
+  @derive {Jason.Encoder, except: [:__meta__]}
 
   @primary_key {:id, :binary_id, autogenerate: true}
-  # @foreign_key_type :binary_id
+  @foreign_key_type :binary_id
   schema "users" do
     field :name, :string
     field :email, :string
 
     timestamps()
 
-    # has_one :account, Account
+    has_one :account, Account
   end
 
   def changeset(model \\ %__MODULE__{}, attrs) do

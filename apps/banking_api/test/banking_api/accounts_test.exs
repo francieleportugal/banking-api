@@ -2,18 +2,20 @@ defmodule BankingApi.AccountsTest do
   use BankingApi.DataCase
 
   alias BankingApi.Accounts
+  alias BankingApi.Accounts.Schemas.User
 
-  describe "create_user/1" do
-    test "create a user with valid data" do
+  describe "create/1" do
+    test "create a account with valid data" do
       attrs = %{
         name: "João das Neves",
         email: "joao@email.com.br"
       }
 
-      assert {:ok, user} = Accounts.create_user(attrs)
+      assert {:ok, user}= Accounts.create(attrs)
 
       assert user.name == attrs.name
       assert user.email == attrs.email
+      assert user.account.balance == 100000
     end
 
     test "fail if name is invalid" do
@@ -22,7 +24,7 @@ defmodule BankingApi.AccountsTest do
         email: "ab@email.com.br"
       }
 
-      assert {:error, changeset} = Accounts.create_user(attrs)
+      assert {:error, changeset} = Accounts.create(attrs)
       refute changeset.valid?
 
       errors = errors_on(changeset)
@@ -36,7 +38,7 @@ defmodule BankingApi.AccountsTest do
         email: "maria_email.com.br"
       }
 
-      assert {:error, changeset} = Accounts.create_user(attrs)
+      assert {:error, changeset} = Accounts.create(attrs)
       refute changeset.valid?
 
       errors = errors_on(changeset)
@@ -45,7 +47,7 @@ defmodule BankingApi.AccountsTest do
     end
 
     test "fail if invalid data" do
-      assert {:error, changeset} = Accounts.create_user(%{})
+      assert {:error, changeset} = Accounts.create(%{})
       refute changeset.valid?
 
       errors = errors_on(changeset)

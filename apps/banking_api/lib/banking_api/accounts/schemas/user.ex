@@ -2,8 +2,6 @@ defmodule BankingApi.Accounts.Schemas.User do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias BankingApi.Accounts.Schemas.User
-
   @required [:name, :email]
 
   # @derive {Jason.Encoder, except: [:__meta__]}
@@ -19,7 +17,7 @@ defmodule BankingApi.Accounts.Schemas.User do
   end
 
   @doc false
-  def changeset(%User{} = model, attrs) do
+  def changeset(model = %__MODULE__{}, attrs) do
     model
     |> cast(attrs, @required)
     |> validate_required(@required)

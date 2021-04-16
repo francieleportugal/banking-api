@@ -8,15 +8,34 @@ defmodule BankingApiWeb.AccountControllerTest do
   alias BankingApi.Operations
 
   setup %{conn: conn} do
-    user = Repo.insert!(%User{
+    user1 = Repo.insert!(%User{
       name: "Yan Cardoso",
       email: "yan@email.com"
     })
+    user2 = Repo.insert!(%User{
+      name: "Cândido Santana",
+      email: "joao@email.com"
+    })
+    user3 = Repo.insert!(%User{
+      name: "Leandro Santana",
+      email: "leandro@email.com"
+    })
 
-    account = Ecto.build_assoc(user, :account, balance: 100000)
-    account = Repo.insert!(account)
+    account1 = Ecto.build_assoc(user1, :account, balance: 100000)
+    account2 = Ecto.build_assoc(user2, :account, balance: 264789)
+    account3 = Ecto.build_assoc(user3, :account, balance: 0)
 
-    {:ok, conn: conn, origin_account_id: account.id}
+    account1 = Repo.insert!(account1)
+    account2 = Repo.insert!(account2)
+    account3 = Repo.insert!(account3)
+
+    {
+      :ok,
+      conn: conn,
+      origin_account_id: account1.id,
+      origin_account_id_to_transfer: account2.id,
+      destination_account_id_to_transfer: account3.id
+    }
   end
 
   describe "POST api/accounts" do
@@ -90,6 +109,85 @@ defmodule BankingApiWeb.AccountControllerTest do
     test "fail if data are missing", ctx do
       assert ctx.conn
         |>post("api/cash-withdrawal", %{})
+        |>json_response(400) == %{
+          "description" => "Invalid data",
+          "type" => "invalid_data"
+        }
+    end
+  end
+
+  describe "POST api/transfer" do
+    test "Transfer with valid data", ctx do
+      input = %{
+        value: 50000,
+        origin_account_id: ctx[:origin_account_id_to_transfer],
+        destination_account_id: ctx[:destination_account_id_to_transfer]
+      }
+
+      assert %{
+        "origin_account" => origin_account,
+        "destination_account" => destination_account,
+        "transaction" => transaction
+      } = ctx.conn
+        |>post("api/transfer", input)
+        |>json_response(200)
+
+
+      assert transaction["operation_id"] == Operations.transfer()
+      assert transaction["origin_account_id"] == input.origin_account_id
+      assert transaction["destination_account_id"] == input.destination_account_id
+      assert origin_account["balance"] == 214789
+      assert destination_account["balance"] == 50000
+    end
+
+    test "Transfer fail if insuficient funds", ctx do
+      input = %{
+        value: 99999999,
+        origin_account_id: ctx[:origin_account_id_to_transfer],
+        destination_account_id: ctx[:destination_account_id_to_transfer]
+      }
+
+      assert ctx.conn
+        |>post("api/transfer", input)
+        |>json_response(422) == %{
+          "description" => "Insuficient funds",
+          "type" => "insufficient_funds"
+        }
+    end
+
+    test "Transfer fail if value equal to zero", ctx do
+      input = %{
+        value: 0,
+        origin_account_id: ctx[:origin_account_id_to_transfer],
+        destination_account_id: ctx[:destination_account_id_to_transfer]
+      }
+
+      assert ctx.conn
+        |>post("api/transfer", input)
+        |>json_response(400) == %{
+          "description" => "Invalid data",
+          "type" => "invalid_data"
+        }
+    end
+
+    test "Transfer fail if data are missing", ctx do
+      assert ctx.conn
+        |>post("api/transfer", %{})
+        |>json_response(400) == %{
+          "description" => "Invalid data",
+          "type" => "invalid_data"
+        }
+    end
+
+    test "Transfer fail if origin account and destination account are equals", ctx do
+      input = %{
+        value: 17894,
+        origin_account_id: ctx[:origin_account_id_to_transfer],
+        destination_account_id: ctx[:origin_account_id_to_transfer]
+      }
+
+      assert ctx.conn
+        |>post("api/transfer", input)
         |>json_response(400) == %{
           "description" => "Invalid data",
           "type" => "invalid_data"

@@ -10,6 +10,6 @@ defmodule BankingApiWeb.Router do
 
     post "/accounts", AccountController, :create
     post "/cash-withdrawal", AccountController, :withdraw_money
-    # post "/transfer", AccountController, :transfer
+    post "/transfer", AccountController, :transfer
   end
 end

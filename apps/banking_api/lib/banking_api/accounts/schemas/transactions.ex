@@ -20,11 +20,11 @@ defmodule BankingApi.Accounts.Schemas.Transaction do
   end
 
   def changeset(model \\ %__MODULE__{}, attrs) do
-    IO.inspect(attrs)
     model
     |>cast(attrs, @required)
     |>validate_required(@required)
-    |>assoc_constraint(:operation_id)
-    |>assoc_constraint(:origin_account_id)
+    |>validate_number(:value, greater_than: 0)
+    |>foreign_key_constraint(:operation_id)
+    |>foreign_key_constraint(:origin_account_id)
   end
 end

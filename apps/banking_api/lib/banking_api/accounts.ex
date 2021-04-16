@@ -8,35 +8,63 @@ defmodule BankingApi.Accounts do
   alias BankingApi.Operations
   alias BankingApi.Accounts.Inputs
 
-  @initial_balance 100000
-
   def create(attrs \\ %{}) do
-    with %{valid?: true} = changeset <- User.changeset(attrs),
-      %{valid?: true} = changeset <- Ecto.Changeset.put_assoc(changeset, :account, %Account{balance: @initial_balance}),
-      {:ok, account} <- Repo.insert(changeset) do
-        {:ok, account}
-      else
-        %{valid?: false} = changeset -> {:error, changeset}
-      end
+    attrs
+    |>User.changeset()
+    |>Repo.insert()
   end
 
   def withdraw_money(%Inputs.WithdrawMoney{} = attrs) do
-    # IO.inspect("-------")
-    # IO.inspect(attrs)
+    account = Repo.get(Account, attrs.origin_account_id)
+
     input = %{
       operation_id: Operations.cash_withdrawal,
       value: attrs.value,
       origin_account_id: attrs.origin_account_id
     }
 
-    # IO.inspect(transaction)
+    with {:ok, transaction} <- create_transaction(input),
+      {:ok, updated_account} <- update_balance(account, input.value) do
+        {:ok, account: updated_account, transaction: Repo.preload(transaction, :origin_account)}
+    else
+      %{valid?: false} = changeset ->
+        {:error, changeset}
 
-    with %{valid?: true} = changeset <- Transaction.changeset(input),
-      {:ok, transaction} <- Repo.insert!(changeset) do
-        {:ok, transaction}
-      else
-        %{valid?: false} = changeset -> {:error, changeset}
+      {:error, error} ->
+        {:error, error}
     end
 
+    # {:ok, updated_account} = account
+    # |>Account.changeset_update_balance(get_new_balance(account.balance, input.value))
+    # |>Repo.update()
+
+    # {:ok, transaction} = input
+    # |>Transaction.changeset()
+    # |>Repo.insert()
+
+    # {:ok, account: updated_account, transaction: transaction}
+
+  end
+
+  defp create_transaction(attrs \\ %{}) do
+    attrs
+    |>Transaction.changeset()
+    |>Repo.insert()
+  end
+
+  defp update_balance(account, withdrawal_value) do
+    new_balance = get_new_balance(account.balance, withdrawal_value)
+
+    account
+    |>Account.changeset_update_balance(new_balance)
+    |>Repo.update()
+  end
+
+  defp get_new_balance(current_balance, withdrawal_value) do
+    if withdrawal_value > current_balance do
+      {:error, :insufficient_funds}
+    end
+
+    current_balance - withdrawal_value
   end
 end

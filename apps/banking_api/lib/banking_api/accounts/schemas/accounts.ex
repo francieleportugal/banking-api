@@ -23,7 +23,15 @@ defmodule BankingApi.Accounts.Schemas.Account do
   @doc false
   def changeset(model \\ %__MODULE__{}, attrs) do
     model
-    |> cast(attrs, @required)
-    |> validate_required(@required)
+    |>cast(attrs, @required)
+    |>validate_required(@required)
+    |>validate_number(:balance, greater_than_or_equal_to: 0)
+  end
+
+  def changeset_update_balance(model \\ %__MODULE__{}, new_balance) do
+    model
+    |>change(balance: new_balance)
+    |>validate_required(@required)
+    |>validate_number(:balance, greater_than_or_equal_to: 0)
   end
 end

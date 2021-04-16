@@ -23,7 +23,7 @@ defmodule BankingApi.Accounts do
       origin_account_id: attrs.origin_account_id
     }
 
-    with {:ok, transaction} <- create_transaction(input),
+    with {:ok, transaction} <- create_transaction(input, Operations.cash_withdrawal),
       {:ok, updated_account} <- decrease_balance(account, input.value) do
         {:ok, %{account: updated_account, transaction: transaction}}
     else
@@ -32,9 +32,43 @@ defmodule BankingApi.Accounts do
     end
   end
 
-  defp create_transaction(attrs) do
+  def transfer(%Inputs.Transfer{} = attrs) do
+    origin_account = Repo.get(Account, attrs.origin_account_id)
+    destination_account = Repo.get(Account, attrs.destination_account_id)
+
+    input = %{
+      operation_id: Operations.transfer,
+      value: attrs.value,
+      origin_account_id: attrs.origin_account_id,
+      destination_account_id: attrs.destination_account_id
+    }
+
+    with {:ok, transaction} <- create_transaction(input, Operations.transfer),
+      {:ok, updated_origin_account} <- decrease_balance(origin_account, input.value),
+      {:ok, updated_destination_account} <- increase_balance(destination_account, input.value) do
+        {
+          :ok,
+          %{
+            origin_account: updated_origin_account,
+            destination_account: updated_destination_account,
+            transaction: transaction
+          }
+        }
+    else
+      %{valid?: false} = changeset -> {:error, changeset}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  defp create_transaction(attrs, Operations.cash_withdrawal) do
     attrs
-    |>Transaction.changeset()
+    |>Transaction.changeset_create_cash_withdrawal()
+    |>Repo.insert()
+  end
+
+  defp create_transaction(attrs, Operations.transfer) do
+    attrs
+    |>Transaction.changeset_create_transfer()
     |>Repo.insert()
   end
 
@@ -44,10 +78,20 @@ defmodule BankingApi.Accounts do
       false -> (
         new_balance = account.balance - value
 
-        account
-        |>Account.changeset_update_balance(new_balance)
-        |>Repo.update()
+        update_balance(account, new_balance)
       )
     end
+  end
+
+  defp increase_balance(%Account{} = account, value) do
+    new_balance = account.balance + value
+
+    update_balance(account, new_balance)
+  end
+
+  defp update_balance(%Account{} = account, new_balance) do
+    account
+      |>Account.changeset_update_balance(new_balance)
+      |>Repo.update()
   end
 end

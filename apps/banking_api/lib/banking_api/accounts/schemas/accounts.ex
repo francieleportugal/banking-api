@@ -6,7 +6,6 @@ defmodule BankingApi.Accounts.Schemas.Account do
 
   @required [:balance]
 
-  # fix: remove :user
   @derive {Jason.Encoder, except: [:__meta__, :user]}
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -18,14 +17,6 @@ defmodule BankingApi.Accounts.Schemas.Account do
 
     timestamps()
 
-  end
-
-  @doc false
-  def changeset(model \\ %__MODULE__{}, attrs) do
-    model
-    |>cast(attrs, @required)
-    |>validate_required(@required)
-    |>validate_number(:balance, greater_than_or_equal_to: 0)
   end
 
   def changeset_update_balance(model \\ %__MODULE__{}, new_balance) do

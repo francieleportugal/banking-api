@@ -1,8 +1,25 @@
 defmodule BankingApi.AccountsTest do
+  require BankingApi.Operations
+
   use BankingApi.DataCase
 
   alias BankingApi.Accounts
+  alias BankingApi.Accounts.Inputs
+  alias BankingApi.Repo
   alias BankingApi.Accounts.Schemas.User
+  alias BankingApi.Operations
+
+  setup do
+    user = Repo.insert!(%User{
+      name: "Laís Souza",
+      email: "lais@email.com"
+    })
+
+    account = Ecto.build_assoc(user, :account, balance: 100000)
+    account = Repo.insert!(account)
+
+    {:ok, origin_account_id: account.id}
+  end
 
   describe "create/1" do
     test "create a account with valid data" do
@@ -53,6 +70,74 @@ defmodule BankingApi.AccountsTest do
       errors = errors_on(changeset)
       assert ["can't be blank"] == errors[:name]
       assert ["can't be blank"] == errors[:email]
+    end
+  end
+
+  describe "withdraw_money/1" do
+    test "Withdraw money with valid data", state do
+      input = %Inputs.WithdrawMoney{
+        value: 100,
+        origin_account_id: state[:origin_account_id]
+      }
+
+      assert {
+        :ok,
+        %{
+          account: account,
+          transaction: transaction
+        }
+      } = Accounts.withdraw_money(input)
+
+      assert transaction.operation_id == Operations.cash_withdrawal
+      assert transaction.origin_account_id == input.origin_account_id
+      assert transaction.value == input.value
+
+      assert account.balance == 99900
+    end
+
+    test "fail if value equal to zero", state do
+      input = %Inputs.WithdrawMoney{
+        value: 0,
+        origin_account_id: state[:origin_account_id]
+      }
+
+      assert {:error, changeset} = Accounts.withdraw_money(input)
+
+      errors = errors_on(changeset)
+      assert ["must be greater than 0"] == errors[:value]
+    end
+
+    test "fail if value less than zero", state do
+      input = %Inputs.WithdrawMoney{
+        value: -1,
+        origin_account_id: state[:origin_account_id]
+      }
+
+      assert {:error, changeset} = Accounts.withdraw_money(input)
+
+      errors = errors_on(changeset)
+      assert ["must be greater than 0"] == errors[:value]
+    end
+
+    test "fail if origin account doesn't exist" do
+      input = %Inputs.WithdrawMoney{
+        value: 100,
+        origin_account_id: "167c9001-5447-4b0b-94d0-ab8f67d47626"
+      }
+
+      assert {:error, changeset} = Accounts.withdraw_money(input)
+
+      errors = errors_on(changeset)
+      assert ["does not exist"] == errors[:origin_account_id]
+    end
+
+    test "fail if insuficient funds", state do
+      input = %Inputs.WithdrawMoney{
+        value: 1000000000,
+        origin_account_id: state[:origin_account_id]
+      }
+
+      assert {:error, :insufficient_funds} == Accounts.withdraw_money(input)
     end
   end
 end

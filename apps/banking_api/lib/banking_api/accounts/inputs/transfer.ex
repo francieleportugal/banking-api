@@ -29,7 +29,6 @@ defmodule BankingApi.Accounts.Inputs.Transfer do
     destination_account_id = get_change(changeset, :destination_account_id)
 
     if origin_account_id == destination_account_id do
-      IO.puts("entrei")
       add_error(changeset, :destination_account_id, "Destination account must be different of origin account")
     else
       changeset

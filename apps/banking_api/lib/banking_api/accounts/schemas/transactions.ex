@@ -8,7 +8,6 @@ defmodule BankingApi.Accounts.Schemas.Transaction do
   @required [:value, :operation_id, :origin_account_id]
   @optional [:destination_account_id]
 
-  # fix: remove :operation, :origin_account, :destination_account
   @derive {Jason.Encoder, except: [:__meta__, :operation, :origin_account, :destination_account]}
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -23,7 +22,7 @@ defmodule BankingApi.Accounts.Schemas.Transaction do
     timestamps()
   end
 
-  def changeset(model \\ %__MODULE__{}, attrs) do
+  def changeset_create_cash_withdrawal(model \\ %__MODULE__{}, attrs) do
     model
     |>cast(attrs, @required)
     |>validate_required(@required)

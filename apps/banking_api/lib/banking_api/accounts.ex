@@ -23,7 +23,7 @@ defmodule BankingApi.Accounts do
       origin_account_id: attrs.origin_account_id
     }
 
-    with {:ok, transaction} <- create_transaction(input),
+    with {:ok, transaction} <- create_transaction(input, Operations.cash_withdrawal),
       {:ok, updated_account} <- decrease_balance(account, input.value) do
         {:ok, %{account: updated_account, transaction: transaction}}
     else
@@ -60,9 +60,9 @@ defmodule BankingApi.Accounts do
     end
   end
 
-  defp create_transaction(attrs) do
+  defp create_transaction(attrs, Operations.cash_withdrawal) do
     attrs
-    |>Transaction.changeset()
+    |>Transaction.changeset_create_cash_withdrawal()
     |>Repo.insert()
   end
 
@@ -78,9 +78,7 @@ defmodule BankingApi.Accounts do
       false -> (
         new_balance = account.balance - value
 
-        account
-        |>Account.changeset_update_balance(new_balance)
-        |>Repo.update()
+        update_balance(account, new_balance)
       )
     end
   end
@@ -88,8 +86,12 @@ defmodule BankingApi.Accounts do
   defp increase_balance(%Account{} = account, value) do
     new_balance = account.balance + value
 
+    update_balance(account, new_balance)
+  end
+
+  defp update_balance(%Account{} = account, new_balance) do
     account
-    |>Account.changeset_update_balance(new_balance)
-    |>Repo.update()
+      |>Account.changeset_update_balance(new_balance)
+      |>Repo.update()
   end
 end

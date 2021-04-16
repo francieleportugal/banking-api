@@ -19,9 +19,10 @@ defmodule BankingApiWeb.AccountController do
   def withdraw_money(conn, params) do
     with {:ok, input} <- InputValidation.cast_and_apply(params, Inputs.WithdrawMoney),
       {:ok, operation} <- Accounts.withdraw_money(input) do
-      send_json(conn, 200, operation)
+        send_json(conn, 200, operation)
     else
       {:error, %Ecto.Changeset{}} -> send_json(conn, 400, ErrorMessages.invalid_data)
+      {:error, :insufficient_funds} -> send_json(conn, 422, ErrorMessages.insufficient_funds)
     end
   end
 

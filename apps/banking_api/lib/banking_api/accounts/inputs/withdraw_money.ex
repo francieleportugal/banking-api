@@ -8,7 +8,7 @@ defmodule BankingApi.Accounts.Inputs.WithdrawMoney do
   @primary_key false
   embedded_schema do
     field :value, :integer
-    field :origin_account_id, :integer
+    field :origin_account_id, :string
   end
 
   def changeset(model \\ %__MODULE__{}, params) do
@@ -16,6 +16,5 @@ defmodule BankingApi.Accounts.Inputs.WithdrawMoney do
     |>cast(params, @required)
     |>validate_required(@required)
     |>validate_number(:value, greater_than: 0)
-    |>foreign_key_constraint(:origin_account_id)
   end
 end

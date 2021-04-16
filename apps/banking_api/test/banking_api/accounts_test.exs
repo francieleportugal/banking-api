@@ -82,10 +82,12 @@ defmodule BankingApi.AccountsTest do
 
       assert {
         :ok,
-        account: account,
-        transaction: transaction
+        %{
+          account: account,
+          transaction: transaction
+        }
       } = Accounts.withdraw_money(input)
-      IO.inspect(transaction)
+
       assert transaction.operation_id == Operations.cash_withdrawal
       assert transaction.origin_account_id == input.origin_account_id
       assert transaction.value == input.value
@@ -127,6 +129,15 @@ defmodule BankingApi.AccountsTest do
 
       errors = errors_on(changeset)
       assert ["does not exist"] == errors[:origin_account_id]
+    end
+
+    test "fail if insuficient funds", state do
+      input = %Inputs.WithdrawMoney{
+        value: 1000000000,
+        origin_account_id: state[:origin_account_id]
+      }
+
+      assert {:error, :insufficient_funds} == Accounts.withdraw_money(input)
     end
   end
 end

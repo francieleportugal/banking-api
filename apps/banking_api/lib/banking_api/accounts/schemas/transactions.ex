@@ -7,6 +7,9 @@ defmodule BankingApi.Accounts.Schemas.Transaction do
 
   @required [:value, :operation_id, :origin_account_id]
 
+  # fix: remove :operation, :origin_account, :destination_account
+  @derive {Jason.Encoder, except: [:__meta__, :operation, :origin_account, :destination_account]}
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "transactions" do

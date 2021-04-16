@@ -24,47 +24,30 @@ defmodule BankingApi.Accounts do
     }
 
     with {:ok, transaction} <- create_transaction(input),
-      {:ok, updated_account} <- update_balance(account, input.value) do
-        {:ok, account: updated_account, transaction: Repo.preload(transaction, :origin_account)}
+      {:ok, updated_account} <- decrease_balance(account, input.value) do
+        {:ok, %{account: updated_account, transaction: transaction}}
     else
-      %{valid?: false} = changeset ->
-        {:error, changeset}
-
-      {:error, error} ->
-        {:error, error}
+      %{valid?: false} = changeset -> {:error, changeset}
+      {:error, error} -> {:error, error}
     end
-
-    # {:ok, updated_account} = account
-    # |>Account.changeset_update_balance(get_new_balance(account.balance, input.value))
-    # |>Repo.update()
-
-    # {:ok, transaction} = input
-    # |>Transaction.changeset()
-    # |>Repo.insert()
-
-    # {:ok, account: updated_account, transaction: transaction}
-
   end
 
-  defp create_transaction(attrs \\ %{}) do
+  defp create_transaction(attrs) do
     attrs
     |>Transaction.changeset()
     |>Repo.insert()
   end
 
-  defp update_balance(account, withdrawal_value) do
-    new_balance = get_new_balance(account.balance, withdrawal_value)
+  defp decrease_balance(%Account{} = account, value) do
+    case value > account.balance do
+      true -> {:error, :insufficient_funds}
+      false -> (
+        new_balance = account.balance - value
 
-    account
-    |>Account.changeset_update_balance(new_balance)
-    |>Repo.update()
-  end
-
-  defp get_new_balance(current_balance, withdrawal_value) do
-    if withdrawal_value > current_balance do
-      {:error, :insufficient_funds}
+        account
+        |>Account.changeset_update_balance(new_balance)
+        |>Repo.update()
+      )
     end
-
-    current_balance - withdrawal_value
   end
 end
